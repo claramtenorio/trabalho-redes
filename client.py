@@ -12,10 +12,13 @@ username = ""
 is_connected = False
 client_ip = "0.0.0.0"
 client_port = 0
+#dicionario para reconstruir as mensagens que vem fragmentadas do servidor
+# { message_hash_id: {parts, received_count, total_fragments } }
+segments_from_server_buffer = {}
 
-#configurações do cliente
+#configuracoes do cliente
 SERVER_HOST = '127.0.0.1' #localhost, servidor e clientes na  mesma maquina
-SERVER_PORT = 65432       #porta alta, para eviter conflitos
+SERVER_PORT = 65432 #porta alta, para eviter conflitos
 BUFFER_SIZE = 1024
 
 #tamanho do cabecalho
@@ -27,10 +30,7 @@ MAX_DATA_SIZE = BUFFER_SIZE - HEADER_SIZE
 
 #tipos de mensagens, para o cabecalho
 #respectivamente - conectar, desconectar, msg fragmentada, msg toda
-TYPE_HI = b'\x00'
-TYPE_BYE = b'\x01'
-TYPE_SEGMENT = b'\x02'
-TYPE_COMPLETE = b'\x03'
-
-#dicionario para reconstruir as mensagens que vem fragmentadas do servidor
-segments_from_server_buffer = {}
+TYPE_HI = 0
+TYPE_BYE = 1
+TYPE_SEGMENT = 2
+TYPE_COMPLETE = 3
