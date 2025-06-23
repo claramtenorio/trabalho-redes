@@ -30,3 +30,16 @@ TYPE_HI = 0
 TYPE_BYE = 1
 TYPE_SEGMENT = 2
 TYPE_COMPLETE = 3
+
+def server_main():
+
+    #inicio do socket do servidor
+    server_socket.bind((SERVER_HOST, SERVER_PORT))
+
+    while True:
+
+        datapacket, client_ad = server_socket.recvfrom(BUFFER_SIZE)
+        #threads para processar os pacotes recebidos de usuarios diferentes
+        threading.Thread(target=treat_packets_received, args=(datapacket, client_ad)).start()
+
+server_main()
