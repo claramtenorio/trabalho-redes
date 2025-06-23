@@ -1,0 +1,16 @@
+#configurações comuns
+BUFFER_SIZE = 1024
+
+#tamanho do cabecalho
+#13 bytes = 1 byte de tipo da mensagem, 4 bytes do hash do id da mensagem,
+#4 bytes para o nem fragmento e 4 bytes para indicar o total de fragmento
+HEADER_SIZE = 13
+#tamanho maximo dos dados que podem ser enviados em uma mensagem
+MAX_DATA_SIZE = BUFFER_SIZE - HEADER_SIZE
+
+#tipos de mensagens, para o cabecalho
+#respectivamente - conectar, desconectar, msg fragmentada, msg toda
+TYPE_HI = 0
+TYPE_BYE = 1
+TYPE_SEGMENT = 2
+TYPE_COMPLETE = 3
