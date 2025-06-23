@@ -25,7 +25,7 @@ class ClientContext:
         self.SERVER_HOST = '127.0.0.1' #localhost, servidor e clientes na  mesma maquina
         self.SERVER_PORT = 65432 #porta alta, para eviter conflitos
 
-context_client = ClientContext() # Instância para acessar as variáveis globais
+context_client = ClientContext() #instância para acessar as variáveis globais
 
 
 #funcoes de envio
