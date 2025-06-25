@@ -104,10 +104,10 @@ def treat_received_packets(packet_data, client_ad):
         #cria a tupla para o endereço completo do cliente
         client_full_ad = (client_ip, client_port) 
         #adiciona o cliente ao dicionário de clientes conectados 
-        context_server.connected_clients[client_full_ad] = username
+        context_server.connected_clients[client_ad] = username
         #avisa que o usuário entrou na sala
         alert_msg = f"{username} entrou na rodinha de conversa"
-        broadcast_message(alert_msg.encode(), client_full_ad)
+        broadcast_message(alert_msg.encode(), client_ad)
 
     #mensagem de saida
     elif type_msg == TYPE_BYE:
