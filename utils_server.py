@@ -23,8 +23,7 @@ TYPE_SEGMENT = 2
 TYPE_COMPLETE = 3
 
 #para conseguir o timestamp atual
-from utils_common import get_current_timestamp
-
+from utils_common import get_current_time
 
 #contexto do servidor
 class ServerContext:
@@ -44,7 +43,7 @@ context_server = ServerContext() #instância para acessar as variaveis globais
 
 def format_message(ip, port, username, content_message):
     #pegar o tempo para colocar na mensagem
-    timestamp = get_current_timestamp()
+    timestamp = get_current_time()
     #formatar a mensagem para o formato pedido no trabalho
     return f"{ip}:{port}/~{username}: {content_message} {timestamp}"
 
