@@ -78,18 +78,18 @@ def send_to_chat(content_message):
     bytes_full_message = file_content.encode()
     message_hash_id = uuid.uuid4().int % (2**32 - 1) #gera um identificador para a mensagem completa
 
-    if len(bytes_full_message) <= MAX_SIZE_DATA:
+    if len(bytes_full_message) <= MAX_DATA_SIZE:
         send_packet(bytes_full_message, message_hash_id, 0, 1, TYPE_COMPLETE)
         print("mensagem enviada sem fragmentação")
 
     else:
         #determinar quantos segmentos são necessários
-        num_fragments = math.ceil(len(bytes_full_message)/MAX_SIZE_DATA)
+        num_fragments = math.ceil(len(bytes_full_message)/MAX_DATA_SIZE)
 
         #forma os pacotes de dados fragmentados
         for i in range(num_fragments):
-            start = i*MAX_SIZE_DATA
-            end = min((i+1) * MAX_SIZE_DATA, len(bytes_full_message))
+            start = i*MAX_DATA_SIZE
+            end = min((i+1) * MAX_DATA_SIZE, len(bytes_full_message))
             bytes_fragment = bytes_full_message[start:end]
             
             send_packet(bytes_fragment, message_hash_id, i, num_fragments, TYPE_SEGMENT)
