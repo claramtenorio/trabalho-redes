@@ -4,10 +4,26 @@ import math
 import struct
 import uuid
 import os
-#importando constanntes que não são definidas aqui
-from utils_constants import BUFFER_SIZE, HEADER_SIZE, MAX_SIZE_DATA, TYPE_HI, TYPE_BYE, TYPE_SEGMENT, TYPE_COMPLETE
-#para conseguir devolver com o timestamp
-from common_utils import get_current_timestamp
+
+#configuracoes comuns
+BUFFER_SIZE = 1024
+
+#tamanho do cabecalho
+#13 bytes = 1 byte de tipo da mensagem, 4 bytes do hash do id da mensagem,
+#4 bytes para o nem fragmento e 4 bytes para indicar o total de fragmento
+HEADER_SIZE = 13
+#tamanho maximo dos dados que podem ser enviados em uma mensagem
+MAX_DATA_SIZE = BUFFER_SIZE - HEADER_SIZE
+
+#tipos de mensagens, para o cabecalho
+#respectivamente - conectar, desconectar, msg fragmentada, msg toda
+TYPE_HI = 0
+TYPE_BYE = 1
+TYPE_SEGMENT = 2
+TYPE_COMPLETE = 3
+
+#para conseguir o timestamp atual
+from utils_common import get_current_timestamp
 
 
 #contexto do servidor
@@ -52,7 +68,7 @@ def send_to_client(data_bytes, client_ad, message_hash_id, num_seg, total_seg, t
 def broadcast_message(content_message, sender_ad):
     #se for preciso, fragmenta a mensagem e a envia para os clientes em seguida
     broadcast_hash_id = uuid.uuid4().int % (2**32 - 1) #mesmo que o que foi feito em utils.client
-    num_fragments = math.ceil(len(bytes_content_message)/MAX_SIZE_DATA)
+    num_fragments = math.ceil(len(content_message)/MAX_DATA_SIZE)
 
     #percorre todos os clientes conectados
     for client_ad, _ in list(context_server.connected_clients.items()):
@@ -61,9 +77,9 @@ def broadcast_message(content_message, sender_ad):
             continue
         #para enviar todos os fragmentos
         for i in range(num_fragments):
-            start = i*MAX_SIZE_DATA
-            end = min((i+1)*MAX_SIZE_DATA, len(bytes_content_message))
-            data_seg = bytes_content_message[start:end]
+            start = i*MAX_DATA_SIZE
+            end = min((i+1)*MAX_DATA_SIZE, len(content_message))
+            data_seg = content_message[start:end]
             type_msg = TYPE_SEGMENT if num_fragments > 1 else TYPE_COMPLETE
             send_to_client(data_seg, client_ad, broadcast_hash_id, i, num_fragments, type_msg)
 
@@ -73,9 +89,9 @@ def treat_received_packets(packet_data, client_ad):
 
     #desempacota, assim como em utils.client
     type_msg = struct.unpack('!B', packet_data[0:1])[0]
-    num_seg = struct.unpack('!I', packet[1:5])[0]
-    total_seg = struct.unpack('!I', packet[5:9])[0]
-    message_hash_id = struct.unpack('!L', packet[9:HEADER_SIZE])[0]
+    num_seg = struct.unpack('!I', packet_data[1:5])[0]
+    total_seg = struct.unpack('!I', packet_data[5:9])[0]
+    message_hash_id = struct.unpack('!L', packet_data[9:HEADER_SIZE])[0]
     data_bytes = packet_data[HEADER_SIZE:]
 
     #verifica o tipo da mensagem
@@ -84,10 +100,10 @@ def treat_received_packets(packet_data, client_ad):
         #decodifica a mensagem para pegar o nome do usuário e o IP/porta do cliente
         parts = data_bytes.decode().split('|', 2)
         username = parts[0]
-        client_ip_msg = parts[1]
-        client_ip_msg = int(parts[2])
+        client_ip = parts[1]
+        client_port = int(parts[2])
         #cria a tupla para o endereço completo do cliente
-        client_full_ad = (client_ip_from_msg, client_ip_msg) 
+        client_full_ad = (client_ip, client_port) 
         #adiciona o cliente ao dicionário de clientes conectados 
         context_server.connected_clients[client_full_ad] = username
         #avisa que o usuário entrou na sala
