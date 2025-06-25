@@ -4,23 +4,21 @@ import math
 import struct
 import os
 import uuid
-
-#configuracoes comuns
+#configurações comuns
 BUFFER_SIZE = 1024
-
 #tamanho do cabecalho
 #13 bytes = 1 byte de tipo da mensagem, 4 bytes do hash do id da mensagem,
 #4 bytes para o nem fragmento e 4 bytes para indicar o total de fragmento
 HEADER_SIZE = 13
 #tamanho maximo dos dados que podem ser enviados em uma mensagem
 MAX_DATA_SIZE = BUFFER_SIZE - HEADER_SIZE
-
 #tipos de mensagens, para o cabecalho
 #respectivamente - conectar, desconectar, msg fragmentada, msg toda
 TYPE_HI = 0
 TYPE_BYE = 1
 TYPE_SEGMENT = 2
 TYPE_COMPLETE = 3
+
 
 #classe para armazenar o contexto do cliente
 class ClientContext:
@@ -102,45 +100,48 @@ def send_to_chat(content_message):
 
 def receive_messages():
 
-    while context_client.connected:
-
-        #para receber os dados que vem do servidor
-        packet, _ = context_client.client_socket.recvfrom(BUFFER_SIZE)
-        
-        #desempacota o cabeçalho do pacote recebido
-        type_msg = struct.unpack('!B', packet[0:1])[0]
-        num_seg = struct.unpack('!I', packet[1:5])[0]
-        total_seg = struct.unpack('!I', packet[5:9])[0]
-        message_hash_id = struct.unpack('!L', packet[9:HEADER_SIZE])[0]
-
-        #extrai apenas a parte util (mensagem) do pacote
-        data_bytes = packet[HEADER_SIZE:]
-
-        #verifica se o tipo da mensagem é válido
-        if type_msg == TYPE_HI:
-            print(data_bytes.decode())
-
-        elif type_msg == TYPE_BYE:
-            print(data_bytes.decode())
-
-        elif type_msg == TYPE_SEGMENT or type_msg == TYPE_COMPLETE:
-
-            #se a mensagem for fragmentada ou completa, armazena no buffer
-            if message_hash_id not in context_client.segments_from_server_buffer:
-                context_client.segments_from_server_buffer[message_hash_id] = {
-                    "parts": [None] * total_seg,
-                    "received_count": 0,
-                    "total_seg": total_seg
-                }
+    while True:
+        try:
+            #para receber os dados que vem do servidor
+            packet, _ = context_client.client_socket.recvfrom(BUFFER_SIZE)
             
-            #adiciona o fragmento recebido no buffer e evita duplicacao
-            if context_client.segments_from_server_buffer[message_hash_id]["parts"][num_seg] is None:
-                context_client.segments_from_server_buffer[message_hash_id]["parts"][num_seg] = data_bytes.decode()
-                context_client.segments_from_server_buffer[message_hash_id]["received_count"] += 1
+            #desempacota o cabeçalho do pacote recebido
+            type_msg = struct.unpack('!B', packet[0:1])[0]
+            num_seg = struct.unpack('!I', packet[1:5])[0]
+            total_seg = struct.unpack('!I', packet[5:9])[0]
+            message_hash_id = struct.unpack('!L', packet[9:HEADER_SIZE])[0]
 
-            #se for o pacote completo, imprime a mensagem completa
-            if context_client.segments_from_server_buffer[message_hash_id]["received_count"] == total_seg:
-                full_content_message = "".join(context_client.segments_from_server_buffer[message_hash_id]["parts"])
-                print(full_content_message)
-                #remove a entrada no dicionario
-                del context_client.segments_from_server_buffer[message_hash_id]
+            #extrai apenas a parte util (mensagem) do pacote
+            data_bytes = packet[HEADER_SIZE:]
+
+            #verifica se o tipo da mensagem é válido
+            if type_msg == TYPE_HI:
+                print(data_bytes.decode())
+
+            elif type_msg == TYPE_BYE:
+                print(data_bytes.decode())
+
+            elif type_msg == TYPE_SEGMENT or type_msg == TYPE_COMPLETE:
+
+                #se a mensagem for fragmentada ou completa, armazena no buffer
+                if message_hash_id not in context_client.segments_from_server_buffer:
+                    context_client.segments_from_server_buffer[message_hash_id] = {
+                        "parts": [None] * total_seg,
+                        "received_count": 0,
+                        "total_seg": total_seg
+                    }
+                
+                #adiciona o fragmento recebido no buffer e evita duplicacao
+                if context_client.segments_from_server_buffer[message_hash_id]["parts"][num_seg] is None:
+                    context_client.segments_from_server_buffer[message_hash_id]["parts"][num_seg] = data_bytes.decode()
+                    context_client.segments_from_server_buffer[message_hash_id]["received_count"] += 1
+
+                #se for o pacote completo, imprime a mensagem completa
+                if context_client.segments_from_server_buffer[message_hash_id]["received_count"] == total_seg:
+                    full_content_message = "".join(context_client.segments_from_server_buffer[message_hash_id]["parts"])
+                    print(full_content_message)
+                    #remove a entrada no dicionario
+                    del context_client.segments_from_server_buffer[message_hash_id]
+        except OSError:
+            # Socket has been closed, so we can exit the loop.
+            break
