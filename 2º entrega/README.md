@@ -1,9 +1,9 @@
 # trabalho-redes
-Primeira entrega do projeto da cadeira: Redes de Computadores
+Segunda entrega do projeto da cadeira: Redes de Computadores
 
 # how to run
 
-0. certifique que está na pasta "trabalho-redes" no terminal
+0. certifique que está na pasta "2º entrega" no terminal
 1. inicialize o servidor usando
    ```sh
    python3 server.py
