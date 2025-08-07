@@ -41,8 +41,30 @@ class ServerContext:
         # RDT para cada cliente
         self.rdt_senders = {} # {client_addr: RDTSender}
         self.rdt_receiver = None
+        self.shutdown_flag = False  # Flag para controlar o encerramento gracioso
 
 context_server = ServerContext() #instância para acessar as variaveis globais
+
+def cleanup_server():
+    """Função para fazer cleanup gracioso do servidor"""
+    print("[SERVER] Iniciando cleanup...")
+    
+    # Sinaliza para threads pararem
+    context_server.shutdown_flag = True
+    
+    # Limpa todos os RDT senders
+    for client_addr, sender in context_server.rdt_senders.items():
+        sender.cleanup()
+    context_server.rdt_senders.clear()
+    
+    # Fecha o socket se ainda estiver aberto
+    if context_server.server_socket:
+        try:
+            context_server.server_socket.close()
+        except:
+            pass
+    
+    print("[SERVER] Cleanup concluído.")
 
 #funcoes auxiliares
 
@@ -253,6 +275,13 @@ class RDTSender:
             self.seq_num = 1 - self.seq_num  # Alterna entre 0 e 1
         else:
             print(f"[RDT SERVER] ACK duplicado ou inválido de {self.dest_addr} (esperado: {self.seq_num}, recebido: {ack_seq_num})")
+    
+    def cleanup(self):
+        # Limpa recursos do sender
+        if self.timeout_timer:
+            self.timeout_timer.cancel()
+            self.timeout_timer = None
+        self.waiting_for_ack = False
 
 class RDTReceiver:
     def __init__(self, socket_obj):

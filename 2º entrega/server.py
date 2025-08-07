@@ -2,7 +2,7 @@ import socket
 import threading
 import os
 import utils_server #importando as funcoes auxiliares do cliente
-from utils_server import treat_received_packets #importando a funcao que trata os pacotes recebidos
+from utils_server import treat_received_packets, cleanup_server #importando a funcao que trata os pacotes recebidos
 
 #configuracoes comuns
 BUFFER_SIZE = 1024
@@ -49,7 +49,8 @@ def server_main():
     except KeyboardInterrupt:
         print("\n[SERVER] Encerrando servidor...")
     finally:
-        utils_server.context_server.server_socket.close()
+        # Usar a função de cleanup ao invés de fechar o socket diretamente
+        cleanup_server()
         print("[SERVER] Servidor encerrado.")
 
 if __name__ == "__main__":

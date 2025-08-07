@@ -3,7 +3,7 @@ import threading
 import os
 import uuid #para gerar IDs das mensagens e nomes para os arquvivos temporários que serão usados
 import utils_client #importando as funcoes auxiliares do cliente
-from utils_client import receive_messages, send_packet, send_to_chat, context_client
+from utils_client import receive_messages, send_packet, send_to_chat, context_client, cleanup_client
 
 #configurações comuns
 BUFFER_SIZE = 1024
@@ -36,10 +36,10 @@ def client_main():
     print(f"[CLIENTE] Conectando ao servidor {SERVER_HOST}:{SERVER_PORT}")
     print("[CLIENTE] Protocolo RDT 3.0 ativo - logs detalhados serão exibidos")
     print("[CLIENTE] Para se conectar, digite: hi, meu nome eh <seu_nome>")
-    print("[CLIENTE] Para sair, digite: tchau")
+    print("[CLIENTE] Para sair, digite: bye")
 
     # Thread para receber mensagens
-    receive_thread = threading.Thread(target=receive_messages, daemon=True)
+    receive_thread = threading.Thread(target=receive_messages, daemon=False)
     receive_thread.start()
     
     try:
@@ -112,7 +112,13 @@ def client_main():
             except:
                 pass
         
-        utils_client.context_client.client_socket.close()
+        # Usar a função de cleanup ao invés de fechar o socket diretamente
+        cleanup_client()
+        
+        # Aguardar a thread de recebimento terminar
+        if receive_thread.is_alive():
+            receive_thread.join(timeout=2.0)
+        
         print("[CLIENTE] Cliente encerrado.")
 
 if __name__ == "__main__":

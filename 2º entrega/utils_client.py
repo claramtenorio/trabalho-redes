@@ -44,8 +44,30 @@ class ClientContext:
         self.SERVER_PORT = 65432 #porta alta, para eviter conflitos
         self.rdt_sender = None
         self.rdt_receiver = None
+        self.shutdown_flag = False  # Flag para controlar o encerramento gracioso
 
 context_client = ClientContext() #instância para acessar as variáveis globais
+
+
+def cleanup_client():
+    """Função para fazer cleanup gracioso do cliente"""
+    print("[CLIENTE] Iniciando cleanup...")
+    
+    # Sinaliza para threads pararem
+    context_client.shutdown_flag = True
+    
+    # Limpa o RDT sender se existir
+    if context_client.rdt_sender:
+        context_client.rdt_sender.cleanup()
+    
+    # Fecha o socket se ainda estiver aberto
+    if context_client.client_socket:
+        try:
+            context_client.client_socket.close()
+        except:
+            pass
+    
+    print("[CLIENTE] Cleanup concluído.")
 
 
 #funcoes de envio
@@ -115,8 +137,10 @@ def receive_messages():
     if not context_client.rdt_receiver:
         context_client.rdt_receiver = RDTReceiver(context_client.client_socket)
         
-    while True:
+    while not context_client.shutdown_flag:
         try:
+            # Define um timeout para o socket para verificar periodicamente o shutdown_flag
+            context_client.client_socket.settimeout(1.0)
             #para receber os dados que vem do servidor
             packet, sender_addr = context_client.client_socket.recvfrom(BUFFER_SIZE)
 
@@ -170,6 +194,9 @@ def receive_messages():
                     print(full_content_message)
                     #remove a entrada no dicionario
                     del context_client.segments_from_server_buffer[message_hash_id]
+        except socket.timeout:
+            # Timeout é normal, apenas continue verificando o shutdown_flag
+            continue
         except OSError:
             # Socket has been closed, so we can exit the loop.
             break
@@ -250,6 +277,13 @@ class RDTSender:
             self.seq_num = 1 - self.seq_num  # Alterna entre 0 e 1
         else:
             print(f"[RDT] ACK duplicado ou inválido recebido (esperado: {self.seq_num}, recebido: {ack_seq_num}).")
+            
+    def cleanup(self):
+        # Limpa recursos do sender
+        if self.timeout_timer:
+            self.timeout_timer.cancel()
+            self.timeout_timer = None
+        self.waiting_for_ack = False
             
 class RDTReceiver:
     def __init__(self, socket_obj):
